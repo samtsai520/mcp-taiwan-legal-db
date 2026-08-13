@@ -1,0 +1,8 @@
+mcp_server/
+.venv/
+data/
+*.json
+pyproject.toml
+.github/
+examples/
+mcp_server/tests/

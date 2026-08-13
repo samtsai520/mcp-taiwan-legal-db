@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>台灣法律資料庫查詢</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1a2e;--surface:#16213e;--accent:#8be9fd;--text:#e0e0e0;--muted:#888;--border:#2a2a4e;--danger:#ff6b6b;--success:#6fcf97;--warn:#ffb86c}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.container{max-width:600px;margin:0 auto;padding:12px 12px calc(20px + env(safe-area-inset-bottom))}
+h1{text-align:center;padding:12px 0 16px;font-size:22px;color:var(--accent);font-weight:700}
+h1 .icon{font-size:26px}
+/* Tabs */
+.tabs{display:flex;gap:2px;background:var(--surface);border-radius:10px 10px 0 0;overflow:hidden;position:sticky;top:0;z-index:10}
+.tab{flex:1;padding:12px 4px;text-align:center;cursor:pointer;background:var(--surface);color:var(--muted);border:none;font-size:15px;font-weight:500;transition:.2s;min-height:44px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.tab.active{background:var(--bg);color:var(--accent);border-bottom:2px solid var(--accent)}
+.tab:active:not(.active){background:#1a2a4e}
+/* Panels */
+.panel{display:none;background:var(--bg);border:1px solid var(--surface);border-top:none;border-radius:0 0 10px 10px;padding:16px 14px}
+.panel.active{display:block}
+/* Form fields */
+.field{margin-bottom:12px}
+.field label{display:block;margin-bottom:4px;color:#aaa;font-size:14px}
+.field input,.field select{width:100%;padding:10px 12px;background:var(--surface);border:1px solid #333;border-radius:8px;color:var(--text);font-size:16px;min-height:44px;-webkit-appearance:none;appearance:none}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row .field{flex:1;min-width:130px}
+/* Buttons */
+.btn{padding:12px 24px;background:#3a8a5a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:16px;min-height:44px;font-weight:600;transition:.15s;-webkit-tap-highlight-color:transparent}
+.btn:active{background:#2a7a4a;transform:scale(.98)}
+.btn:disabled{background:#555;cursor:not-allowed}
+.btn-sm{padding:8px 14px;font-size:14px;min-height:36px}
+.btn-row{margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* Results */
+.result-area{margin-top:16px}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
+.result-card .case-id{color:var(--accent);font-weight:600;font-size:17px;cursor:pointer}
+.result-card .meta{color:#999;font-size:13px;margin-top:4px}
+.result-card .summary{margin-top:8px;color:#ccc;font-size:14px}
+.result-card .full-text{margin-top:12px;white-space:pre-wrap;font-size:15px;max-height:500px;overflow-y:auto;background:#0f0f23;padding:12px;border-radius:6px;border:1px solid #333;line-height:1.7}
+.result-card .label{color:var(--warn);font-weight:600;margin-top:12px;display:block;font-size:15px}
+.result-card .section{margin-top:6px;white-space:pre-wrap;font-size:15px;line-height:1.7}
+.stat-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;margin-left:6px}
+.stat-badge.green{background:#2a5a3a;color:var(--success)}
+.stat-badge.red{background:#5a2a2a;color:var(--danger)}
+.stat-badge.gray{background:#3a3a4a;color:#999}
+/* Loading */
+.loading{text-align:center;padding:30px;color:var(--muted)}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--surface);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Error */
+.error-msg{background:#3a1a1a;border:1px solid #5a2a2a;border-radius:8px;padding:12px;color:var(--danger);margin:10px 0;font-size:15px}
+/* Links */
+.judgment-link{color:var(--accent);cursor:pointer;text-decoration:none;font-size:15px}
+.judgment-link:active{color:#a0d4fd}
+.citation-item{padding:8px 12px;background:#0f0f23;border-radius:6px;margin:5px 0;font-size:15px}
+.empty-hint{text-align:center;color:#666;padding:20px;font-size:15px}
+/* Collapsible */
+.collapsible-header{cursor:pointer;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent}
+.collapsible-arrow{color:var(--muted);font-size:14px;transition:transform .2s}
+.collapsible-arrow.open{transform:rotate(90deg)}
+.collapsible-content{display:none;margin-top:10px}
+.collapsible-content.open{display:block}
+/* Footer */
+.footer{text-align:center;padding:24px 0 10px;color:#666;font-size:13px;line-height:1.8}
+.footer a{color:#666}
+/* Scrollable article list */
+.article-list{max-height:500px;overflow-y:auto;margin-top:10px;-webkit-overflow-scrolling:touch}
+.article-item{padding:10px 0;border-bottom:1px solid var(--border)}
+.article-item:last-child{border-bottom:none}
+.article-num{color:var(--warn);font-weight:600;font-size:15px}
+.article-content{white-space:pre-wrap;margin-top:4px;font-size:15px;line-height:1.7}
+/* Note banner */
+.note-banner{background:#1a2a4e;border:1px solid #2a4a6e;border-radius:8px;padding:10px 14px;color:#7ab7de;font-size:14px;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="container">
+<h1><span class="icon">⚖️</span> 台灣法律資料庫查詢</h1>
+
+<div class="tabs">
+  <button class="tab active" data-tab="judgments">裁判書搜尋</button>
+  <button class="tab" data-tab="regulations">法規查詢</button>
+  <button class="tab" data-tab="constitutional">大法官解釋</button>
+</div>
+
+<!-- Tab 1: 裁判書搜尋 -->
+<div id="panel-judgments" class="panel active">
+  <div class="field">
+    <label>關鍵字全文搜尋</label>
+    <input id="jud-keyword" placeholder="如：預售屋 遲延交屋" autocomplete="off">
+  </div>
+  <div class="row">
+    <div class="field"><label>法院</label>
+      <select id="jud-court">
+        <option value="">全部法院</option>
+        <option value="最高法院">最高法院</option>
+        <option value="最高行政法院">最高行政法院</option>
+        <option value="臺灣高等法院">臺灣高等法院</option>
+        <option value="臺灣臺北地方法院">臺灣臺北地方法院</option>
+        <option value="臺灣新北地方法院">臺灣新北地方法院</option>
+        <option value="臺灣臺中地方法院">臺灣臺中地方法院</option>
+        <option value="臺灣高雄地方法院">臺灣高雄地方法院</option>
+        <option value="智慧財產及商業法院">智慧財產及商業法院</option>
+      </select>
+    </div>
+    <div class="field"><label>案件類型</label>
+      <select id="jud-case-type">
+        <option value="">全部</option>
+        <option value="民事">民事</option>
+        <option value="刑事">刑事</option>
+        <option value="行政">行政</option>
+        <option value="懲戒">懲戒</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="field"><label>起始年度（民國）</label><input id="jud-year-from" type="number" placeholder="如 110" inputmode="numeric"></div>
+    <div class="field"><label>截止年度（民國）</label><input id="jud-year-to" type="number" placeholder="如 115" inputmode="numeric"></div>
+    <div class="field"><label>最大筆數</label><input id="jud-max" type="number" value="20" inputmode="numeric"></div>
+  </div>
+  <div class="btn-row"><button class="btn" onclick="doSearchJudgments()">搜尋裁判書</button></div>
+  <div id="jud-results" class="result-area"></div>
+</div>
+
+<!-- Tab 2: 法規查詢 -->
+<div id="panel-regulations" class="panel">
+  <div class="field">
+    <label>法規名稱</label>
+    <input id="reg-law-name" placeholder="如：民法、勞動基準法" list="reg-suggestions" autocomplete="off">
+    <datalist id="reg-suggestions"></datalist>
+  </div>
+  <div class="row">
+    <div class="field"><label>單一條號（如 184）</label><input id="reg-article" placeholder="如 184 或 247-1" inputmode="numeric"></div>
+    <div class="field"><label>起始條號</label><input id="reg-from" placeholder="如 184" inputmode="numeric"></div>
+    <div class="field"><label>截止條號</label><input id="reg-to" placeholder="如 198" inputmode="numeric"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="doQueryRegulation()">查詢法規</button>
+    <button class="btn btn-sm" onclick="doSearchRegulations()">搜尋法規名稱</button>
+  </div>
+  <div class="note-banner">ℹ️ Vercel 版內建約 60 部常用法規。完整 11,700+ 部請使用本地版本。</div>
+  <div id="reg-search-results" class="result-area"></div>
+  <div id="reg-results" class="result-area"></div>
+</div>
+
+<!-- Tab 3: 大法官解釋 -->
+<div id="panel-constitutional" class="panel">
+  <div class="field">
+    <label>查詢字號（如 釋字748、111年憲判字第1號）</label>
+    <input id="cc-case-id" placeholder="如：釋字748 或 111年憲判字第1號" autocomplete="off">
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="doGetInterpretation(false)">查詢解釋</button>
+    <button class="btn btn-sm" onclick="doGetInterpretation(true)">含理由書全文</button>
+    <button class="btn btn-sm" onclick="doGetCitations()">引用關係</button>
+  </div>
+  <hr style="border-color:var(--border);margin:16px 0">
+  <div class="field">
+    <label>搜尋關鍵字（搜字號 + 案由）</label>
+    <input id="cc-keyword" placeholder="如：集會自由、言論自由、499" autocomplete="off">
+  </div>
+  <div class="btn-row"><button class="btn btn-sm" onclick="doSearchInterpretations()">搜尋解釋</button></div>
+  <div id="cc-results" class="result-area"></div>
+</div>
+
+<div class="footer">
+  資料來源：司法院 · 全國法規資料庫 · 憲法法庭<br>
+  Sam Tsai 製作
+</div>
+</div>
+
+<script>
+// ── Tab switching with back button support ──
+const TABS=['judgments','regulations','constitutional'];
+
+function switchTab(name,push=true){
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.toggle('active',t.dataset.tab===name);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const panel=document.getElementById('panel-'+name);
+  if(panel)panel.classList.add('active');
+  if(push)history.pushState({tab:name},'', '#'+name);
+}
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>switchTab(t.dataset.tab));
+});
+
+window.addEventListener('popstate',e=>{
+  const tab=(e.state&&e.state.tab)||'judgments';
+  switchTab(tab,false);
+});
+
+// Restore tab from URL hash
+if(location.hash){
+  const t=location.hash.slice(1);
+  if(TABS.includes(t))switchTab(t,false);
+}
+
+// ── API helpers ──
+async function postJSON(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function showLoading(id){
+  const el=document.getElementById(id);
+  el.innerHTML='<div class="loading"><span class="spinner"></span>查詢中…</div>';
+}
+function showError(id,msg){
+  document.getElementById(id).innerHTML='<div class="error-msg">⚠ '+esc(msg)+'</div>';
+}
+function showEmpty(id,hint){
+  document.getElementById(id).innerHTML='<div class="empty-hint">'+esc(hint)+'</div>';
+}
+
+// ── Collapsible toggle ──
+function toggleCollapsible(id){
+  const content=document.getElementById(id+'-content');
+  const arrow=document.getElementById(id+'-arrow');
+  if(content){content.classList.toggle('open');}
+  if(arrow){arrow.classList.toggle('open');}
+}
+
+// ── 裁判書搜尋 ──
+async function doSearchJudgments(){
+  showLoading('jud-results');
+  const body={
+    keyword:document.getElementById('jud-keyword').value,
+    court:document.getElementById('jud-court').value,
+    case_type:document.getElementById('jud-case-type').value,
+    year_from:document.getElementById('jud-year-from').value||0,
+    year_to:document.getElementById('jud-year-to').value||0,
+    max_results:document.getElementById('jud-max').value||20,
+  };
+  try{
+    const r=await postJSON('/api/search_judgments',body);
+    if(!r.success){showError('jud-results',r.error||'搜尋失敗');return;}
+    if(!r.results||r.results.length===0){showEmpty('jud-results','查無結果');return;}
+    let h='<div style="color:#aaa;margin-bottom:10px">共 '+r.total_count+' 筆</div>';
+    r.results.forEach((j,idx)=>{
+      const did='jud-'+idx;
+      h+='<div class="result-card">'+
+        '<div class="collapsible-header" onclick="toggleCollapsible(\''+did+'\')">'+
+        '<div><div class="case-id">'+esc(j.case_id)+'</div>'+
+        '<div class="meta">'+esc(j.court||'')+' · '+esc(j.case_type||'')+' · '+esc(j.date||'')+' · '+esc(j.cause||'')+'</div></div>'+
+        '<span class="collapsible-arrow" id="'+did+'-arrow">▶</span></div>'+
+        (j.summary?'<div class="summary" style="margin-top:8px">'+esc(j.summary.substring(0,200))+(j.summary.length>200?'…':'')+'</div>':'')+
+        '<div class="collapsible-content" id="'+did+'-content">'+
+        '<div style="margin-top:8px"><span class="judgment-link" onclick="getJudgment(\''+esc(j.jid)+'\',\''+did+'\')">查看全文 →</span></div>'+
+        '<div id="jud-detail-'+esc(j.jid)+'"></div>'+
+        '</div></div>';
+    });
+    document.getElementById('jud-results').innerHTML=h;
+  }catch(e){showError('jud-results',e.message);}
+}
+
+async function getJudgment(jid,did){
+  const el=document.getElementById('jud-detail-'+jid);
+  if(el.innerHTML){el.innerHTML='';return;}
+  el.innerHTML='<div class="loading"><span class="spinner"></span>取得全文中…</div>';
+  try{
+    const r=await postJSON('/api/get_judgment',{jid});
+    if(!r.success){el.innerHTML='<div class="error-msg">⚠ '+esc(r.error)+'</div>';return;}
+    let h='<div class="full-text">';
+    if(r.main_text)h+='<span class="label">主文</span>\n'+esc(r.main_text)+'\n\n';
+    if(r.facts)h+='<span class="label">事實</span>\n'+esc(r.facts.substring(0,2000))+(r.facts.length>2000?'…':'')+'\n\n';
+    if(r.reasoning)h+='<span class="label">理由</span>\n'+esc(r.reasoning.substring(0,3000))+(r.reasoning.length>3000?'…':'')+'\n\n';
+    if(r.cited_statutes&&r.cited_statutes.length)h+='<span class="label">引用法條</span>\n'+r.cited_statutes.map(esc).join('、')+'\n\n';
+    if(r.full_text)h+='<span class="label">完整全文</span>\n'+esc(r.full_text.substring(0,8000))+(r.full_text.length>8000?'…（截斷）':'');
+    if(!r.full_text&&!r.main_text)h+='（無全文內容）';
+    if(r.source_url)h+='<div style="margin-top:10px;font-size:13px"><a href="'+esc(r.source_url)+'" target="_blank" style="color:#666">原始來源 →</a></div>';
+    h+='</div>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<div class="error-msg">⚠ '+esc(e.message)+'</div>';}
+}
+
+// ── 法規查詢 ──
+async function doQueryRegulation(){
+  const lawName=document.getElementById('reg-law-name').value.trim();
+  if(!lawName){showError('reg-results','請輸入法規名稱');return;}
+  showLoading('reg-results');
+  document.getElementById('reg-search-results').innerHTML='';
+  const body={
+    law_name:lawName,
+    article_no:document.getElementById('reg-article').value.trim(),
+    from_no:document.getElementById('reg-from').value.trim(),
+    to_no:document.getElementById('reg-to').value.trim(),
+  };
+  try{
+    const r=await postJSON('/api/query_regulation',body);
+    if(!r.success){showError('reg-results',r.error||'查詢失敗');return;}
+    let h='<div class="result-card">';
+    if(r.law){
+      h+='<div class="case-id">'+esc(r.law.name||r.law.pcode);
+      h+=' <span class="stat-badge green">'+esc(r.law.status||'現行法規')+'</span></div>';
+    }
+    if(r.note)h+='<div class="meta">'+esc(r.note)+'</div>';
+    if(r.article){
+      h+='<div style="margin-top:10px"><span class="label">第 '+esc(r.article_number||'')+' 條</span><div class="section">'+esc(r.article)+'</div></div>';
+    }
+    if(r.articles&&r.articles.length){
+      h+='<div class="article-list">';
+      r.articles.forEach(a=>{
+        h+='<div class="article-item"><span class="article-num">第 '+esc(a.number)+' 條</span><div class="article-content">'+esc(a.content)+'</div></div>';
+      });
+      h+='</div>';
+    }
+    if(r.source_url)h+='<div style="margin-top:10px;font-size:13px"><a href="'+esc(r.source_url)+'" target="_blank" style="color:#666">原始來源 →</a></div>';
+    h+='</div>';
+    document.getElementById('reg-results').innerHTML=h;
+  }catch(e){showError('reg-results',e.message);}
+}
+
+async function doSearchRegulations(){
+  const lawName=document.getElementById('reg-law-name').value.trim();
+  if(!lawName){showError('reg-search-results','請輸入搜尋關鍵字');return;}
+  showLoading('reg-search-results');
+  try{
+    const r=await postJSON('/api/search_regulations',{keyword:lawName});
+    if(!r.success){showError('reg-search-results',r.error);return;}
+    if(!r.results||r.results.length===0){showEmpty('reg-search-results','查無相符法規');return;}
+    let h='<div style="color:#aaa;margin-bottom:8px">共 '+r.total_count+' 部法規</div>';
+    r.results.forEach(reg=>{
+      h+='<div class="result-card" style="padding:10px 14px;cursor:pointer" onclick="document.getElementById(\'reg-law-name\').value=\''+esc(reg.law_name).replace(/'/g,"\\'")+'\';doQueryRegulation()">'+
+        '<span style="color:var(--accent);font-weight:600">'+esc(reg.law_name)+'</span>'+
+        ' <span class="stat-badge green">'+esc(reg.status)+'</span></div>';
+    });
+    document.getElementById('reg-search-results').innerHTML=h;
+    document.getElementById('reg-results').innerHTML='';
+  }catch(e){showError('reg-search-results',e.message);}
+}
+
+// ── 大法官解釋 ──
+async function doGetInterpretation(full){
+  const caseId=document.getElementById('cc-case-id').value.trim();
+  if(!caseId){showError('cc-results','請輸入字號');return;}
+  showLoading('cc-results');
+  const body={case_id:caseId};
+  if(full)body.include_reasoning=true;
+  try{
+    const r=await postJSON('/api/get_interpretation',body);
+    if(!r.success){showError('cc-results',r.error||'查詢失敗');return;}
+    let h='<div class="result-card">';
+    h+='<div class="case-id">'+esc(r.case_id)+'</div>';
+    h+='<div class="meta">'+esc(r.type||'')+' · '+esc(r.date||'')+(r.main_text_truncated?' （主文已截斷）':'')+'</div>';
+    if(r.issues)h+='<span class="label">解釋爭點</span><div class="section">'+esc(r.issues)+'</div>';
+    if(r.issue_summary)h+='<span class="label">案由</span><div class="section">'+esc(r.issue_summary)+'</div>';
+    if(r.petitioner)h+='<span class="label">聲請人</span><div class="section">'+esc(r.petitioner)+'</div>';
+    if(r.main_text)h+='<span class="label">'+(r.type==='憲判字'?'主文':'解釋文')+'</span><div class="section">'+esc(r.main_text)+'</div>';
+    if(r.summary)h+='<span class="label">判決摘要</span><div class="section">'+esc(r.summary)+'</div>';
+    if(r.reasoning)h+='<span class="label">理由書'+(r.reasoning_truncated?'（已截斷）':'')+'</span><div class="section" style="max-height:400px;overflow-y:auto">'+esc(r.reasoning)+'</div>';
+    if(r.related_statutes)h+='<span class="label">相關法令</span><div class="section">'+esc(r.related_statutes)+'</div>';
+    if(r.has_reasoning===false&&r.has_opinions===false)h+='<div class="meta" style="margin-top:8px">（本件無獨立理由書/意見書電子檔）</div>';
+    if(r.source_url)h+='<div style="margin-top:10px;font-size:13px"><a href="'+esc(r.source_url)+'" target="_blank" style="color:#666">原始來源 →</a></div>';
+    h+='</div>';
+    document.getElementById('cc-results').innerHTML=h;
+  }catch(e){showError('cc-results',e.message);}
+}
+
+async function doSearchInterpretations(){
+  const kw=document.getElementById('cc-keyword').value.trim();
+  if(!kw){showError('cc-results','請輸入搜尋關鍵字');return;}
+  showLoading('cc-results');
+  try{
+    const r=await postJSON('/api/search_interpretations',{keyword:kw,max_results:30});
+    if(!r.success){showError('cc-results',r.error);return;}
+    if(!r.results||r.results.length===0){
+      let msg='查無結果';
+      if(r.errors&&r.errors.length)msg+='（'+r.errors.join('；')+'）';
+      showEmpty('cc-results',msg);
+      return;
+    }
+    let h='<div style="color:#aaa;margin-bottom:10px">共 '+r.count+' 筆'+(r.truncated?'（已截斷）':'')+'</div>';
+    r.results.forEach(item=>{
+      h+='<div class="result-card" style="padding:10px 14px;cursor:pointer" onclick="document.getElementById(\'cc-case-id\').value=\''+esc(item.case_id).replace(/'/g,"\\'")+'\';doGetInterpretation(false)">'+
+        '<span style="color:var(--accent);font-weight:600;font-size:16px">'+esc(item.case_id)+'</span>'+
+        ' <span class="stat-badge gray">'+esc(item.type)+'</span></div>';
+    });
+    document.getElementById('cc-results').innerHTML=h;
+  }catch(e){showError('cc-results',e.message);}
+}
+
+async function doGetCitations(){
+  const caseId=document.getElementById('cc-case-id').value.trim();
+  if(!caseId){showError('cc-results','請輸入字號');return;}
+  showLoading('cc-results');
+  try{
+    const r=await postJSON('/api/get_citations',{case_id:caseId,include_context:false});
+    if(!r.success){showError('cc-results',r.error);return;}
+    let h='<div class="result-card">';
+    h+='<div class="case-id">'+esc(r.source_case_id)+' — 引用關係</div>';
+    h+='<div class="meta">引用 '+r.citation_count+' 件</div>';
+    if(r.reasoning_truncated)h+='<div class="meta" style="color:var(--danger)">⚠ 理由書已截斷，引用清單可能不完整</div>';
+    if(r.citations&&r.citations.length){
+      r.citations.forEach(c=>{
+        h+='<div class="citation-item" style="cursor:pointer" onclick="document.getElementById(\'cc-case-id\').value=\''+esc(c.case_id).replace(/'/g,"\\'")+'\';doGetInterpretation(false)"><span style="color:var(--accent);font-weight:600">'+esc(c.case_id)+'</span> <span class="stat-badge gray">'+esc(c.type)+'</span></div>';
+      });
+    }else{h+='<div class="empty-hint">無引用其他解釋</div>';}
+    h+='</div>';
+    document.getElementById('cc-results').innerHTML=h;
+  }catch(e){showError('cc-results',e.message);}
+}
+
+// ── 法規名稱自動完成 ──
+let _suggestTimer=null;
+document.getElementById('reg-law-name').addEventListener('input',function(){
+  const v=this.value.trim();
+  if(v.length<1)return;
+  clearTimeout(_suggestTimer);
+  _suggestTimer=setTimeout(async()=>{
+    try{
+      const r=await postJSON('/api/search_regulations',{keyword:v});
+      if(r.success&&r.results){
+        const dl=document.getElementById('reg-suggestions');
+        dl.innerHTML=r.results.slice(0,15).map(x=>'<option value="'+esc(x.law_name)+'">').join('');
+      }
+    }catch(e){}
+  },300);
+});
+
+// ── Enter key triggers search ──
+document.getElementById('jud-keyword').addEventListener('keydown',e=>{if(e.key==='Enter')doSearchJudgments();});
+document.getElementById('cc-case-id').addEventListener('keydown',e=>{if(e.key==='Enter')doGetInterpretation(false);});
+document.getElementById('cc-keyword').addEventListener('keydown',e=>{if(e.key==='Enter')doSearchInterpretations();});
+document.getElementById('reg-law-name').addEventListener('keydown',e=>{if(e.key==='Enter')doQueryRegulation();});
+</script>
+</body>
+</html>
